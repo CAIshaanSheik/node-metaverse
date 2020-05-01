@@ -28,7 +28,7 @@
     "ts-node": "^7.0.1",
     "tslint": "^5.11.0",
     "tslint-eslint-rules": "^5.4.0",
-    "typescript": "^3.6.3"
+    "typescript": "^3.8.3"
   },
   "dependencies": {
     "@caspertech/llsd": "^1.0.3",
@@ -37,7 +37,6 @@
     "@types/mocha": "^5.2.5",
     "@types/node": "^10.14.19",
     "@types/request": "^2.48.3",
-    "@types/tiny-async-pool": "^1.0.0",
     "@types/uuid": "^3.4.4",
     "@types/validator": "^9.4.2",
     "@types/xml": "^1.0.2",
@@ -51,7 +50,6 @@
     "request": "^2.88.0",
     "rxjs": "^6.3.3",
     "tar": "^4.4.6",
-    "tiny-async-pool": "^1.0.1",
     "uuid": "^3.3.2",
     "validator": "^10.8.0",
     "xml": "^1.0.1",
