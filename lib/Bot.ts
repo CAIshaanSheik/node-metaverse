@@ -32,23 +32,26 @@ import { Vector3 } from './classes/Vector3';
 import { RegionHandshakeMessage } from './classes/messages/RegionHandshake';
 import { AgentMovementCompleteMessage } from './classes/messages/AgentMovementComplete';
 import { Subscription } from 'rxjs/internal/Subscription';
-import Timer = NodeJS.Timer;
-
+import Timer = NodeJS.Timeout;
 
 export class Bot
 {
     private loginParams: LoginParameters;
     private currentRegion: Region;
     private agent: Agent;
-    private ping: Timer | null = null;
+    private ping?: Timer;
     private pingNumber = 0;
     private lastSuccessfulPing = 0;
-    private circuitSubscription: Subscription | null = null;
+    private circuitSubscription?: Subscription;
     private options: BotOptionFlags;
     private eventQueueRunning = false;
     public clientEvents: ClientEvents;
     public clientCommands: ClientCommands;
-    private eventQueueWaits: any = {};
+    private eventQueueWaits: {[key: string] : {
+        resolve: any,
+        timer: Timer
+    }
+    } = {};
     private stay = false;
     private stayRegion = '';
     private stayPosition = new Vector3();
@@ -104,51 +107,41 @@ export class Bot
         this.currentRegion = region;
         this.clientCommands = new ClientCommands(this.currentRegion, this.agent, this);
         this.currentRegion.clientCommands = this.clientCommands;
-        if (this.ping !== null)
+        if (this.ping)
         {
             clearInterval(this.ping);
-            this.ping = null;
+            this.ping = undefined;
         }
 
         await this.connectToSim(requested);
     }
 
-    waitForEventQueue(timeout: number = 1000): Promise<void>
+    async waitForEventQueue(timeout: number = 1000): Promise<void>
     {
-        return new Promise((resolve, reject) =>
-        {
-            if (this.eventQueueRunning)
-            {
-                resolve();
-            }
-            else
-            {
+        if (!this.eventQueueRunning) {
+            return new Promise((resolve, reject) => {
                 const waitID = UUID.random().toString();
-                const newWait: {
-                    'resolve': any,
-                    'timer'?: Timer
-                } = {
-                    'resolve': resolve
+                const newWait =  {
+                    resolve,
+                    timer: setTimeout(() =>
+                    {
+                        delete this.eventQueueWaits[waitID];
+                        reject(new Error('Timeout'));
+                    }, timeout)
                 };
-
-                newWait.timer = setTimeout(() =>
-                {
-                    delete this.eventQueueWaits[waitID];
-                    reject(new Error('Timeout'));
-                }, timeout);
-
+    
                 this.eventQueueWaits[waitID] = newWait;
-            }
-        });
+            })
+        }
     }
 
     private closeCircuit()
     {
         this.currentRegion.shutdown();
-        if (this.circuitSubscription !== null)
+        if (this.circuitSubscription)
         {
             this.circuitSubscription.unsubscribe();
-            this.circuitSubscription = null;
+            this.circuitSubscription = undefined;
         }
         delete this.currentRegion;
 
@@ -156,8 +149,8 @@ export class Bot
         delete this.clientCommands;
         if (this.ping !== null)
         {
-            clearInterval(this.ping);
-            this.ping = null;
+            clearInterval(this.ping as NodeJS.Timeout);
+            this.ping = undefined;
         }
 
     }
